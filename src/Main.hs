@@ -1,6 +1,7 @@
 module Main (main) where
 
-import Parser (parse, prettyAstView)
+import Preprocessor (preprocess)
+import Parser (parse, prettyAstView, Expr(..), betaReduction)
 import System.Environment (getArgs)
 import System.IO (hSetEncoding, stdout, utf8)
 import Tokenizer (tokenize)
@@ -15,4 +16,4 @@ main = do
     -- TODO: enter REPL here instead
     _ -> error "repl not implemented yet"
 
-  putStrLn $ (prettyAstView . fst . parse . tokenize) source
+  putStrLn $ (prettyAstView . fst . betaReduction . fst . parse . tokenize . preprocess) source

@@ -1,6 +1,6 @@
 BUILD=build
 SRC=src
-SOURCES=$(SRC)/Main.hs $(SRC)/Parser.hs $(SRC)/Tokenizer.hs
+SOURCES=$(SRC)/Main.hs $(SRC)/Parser.hs $(SRC)/Tokenizer.hs $(SRC)/Preprocessor.hs
 FLAGS=-odir $(BUILD) -hidir $(BUILD) -i$(SRC)
 OUT=lambda
 

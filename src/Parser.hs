@@ -1,4 +1,4 @@
-module Parser (Expr, parse, prettyAstView) where
+module Parser (Expr (..), parse, prettyAstView, betaReduction) where
 
 import Tokenizer
 
@@ -14,7 +14,6 @@ prettyAstView expr = prettyHelper 0 expr
     prettyHelper indent (IdExpr x) = pad indent ++ "Id: " ++ x
     prettyHelper indent (FuncExpr x body) =
       pad indent ++ "Func: " ++ x ++ "\n" ++ prettyHelper (indent + 2) body
-
     prettyHelper indent (ApplExpr e1 e2) =
       pad indent ++ "App:\n" ++ prettyHelper (indent + 2) e1 ++ "\n" ++ prettyHelper (indent + 2) e2
 
@@ -41,3 +40,39 @@ parseFunc (Identifier param : Dot : rest) =
   let (body, remaining) = parse rest
    in (FuncExpr param body, remaining)
 parseFunc tokens = error ("expected param.body after λ, got: " ++ show tokens)
+
+-- returns a tuple where
+-- fst: final expression
+-- snd: reduction history
+betaReduction :: Expr -> (Expr, [Expr])
+betaReduction expr = bReduce expr []
+  where
+    bReduce (ApplExpr (FuncExpr param body) arg) history =
+      let result = substitute param arg body
+       in bReduce result (history ++ [result])
+      
+    bReduce (ApplExpr e1 e2) history =
+      let (e1', h1) = bReduce e1 history
+       in case e1' of
+            FuncExpr param body -> bReduce (substitute param e2 body) h1
+            _ ->
+              let (e2', h2) = bReduce e2 h1
+               in (ApplExpr e1' e2', h2)
+
+    bReduce (FuncExpr param body) history =
+      let (body', h) = bReduce body history
+       in (FuncExpr param body', h)
+
+    bReduce expr history = (expr, history)
+
+substitute :: String -> Expr -> Expr -> Expr
+substitute name arg (ApplExpr e1 e2) =
+  ApplExpr (substitute name arg e1) (substitute name arg e2)
+
+substitute name arg (FuncExpr param body)
+  | param == name = FuncExpr param body -- shadowed
+  | otherwise = FuncExpr param (substitute name arg body)
+
+substitute name arg (IdExpr x)
+  | x == name = arg
+  | otherwise = IdExpr x

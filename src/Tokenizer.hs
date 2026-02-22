@@ -1,6 +1,6 @@
 module Tokenizer (tokenize, Token (..)) where
 
-import Data.Char (isAlphaNum)
+import Data.Char (isAlphaNum, isSpace)
 
 data Token
   = LParen
@@ -21,17 +21,19 @@ data TokenizerCtx = TokenizerCtx
 -- use unicode to support actual lambdaa
 -- preserve position  data in token for better errors
 getNextToken :: TokenizerCtx -> TokenizerCtx
-getNextToken (TokenizerCtx {source = s, index = i, tokens = ts}) = case s !! i of
-  ' ' -> getNextToken (TokenizerCtx {source = s, index = i + 1, tokens = ts})
-  '(' -> TokenizerCtx {source = s, index = i + 1, tokens = ts ++ [LParen]}
-  ')' -> TokenizerCtx {source = s, index = i + 1, tokens = ts ++ [RParen]}
-  '.' -> TokenizerCtx {source = s, index = i + 1, tokens = ts ++ [Dot]}
-  '\\' -> TokenizerCtx {source = s, index = i + 1, tokens = ts ++ [Lambda]}
-  'λ' -> TokenizerCtx {source = s, index = i + 1, tokens = ts ++ [Lambda]}
-  c ->
-    if (isAlphaNum c)
-      then getNextId (TokenizerCtx {source = s, index = i, tokens = ts})
-      else error ("unexpected char: `" ++ [c, '`'])
+getNextToken ctx@(TokenizerCtx {source = s, index = i, tokens = ts})
+  | i >= length s = ctx
+  | otherwise = case s !! i of
+      c | isSpace c -> getNextToken (TokenizerCtx {source = s, index = i + 1, tokens = ts})
+      '(' -> TokenizerCtx {source = s, index = i + 1, tokens = ts ++ [LParen]}
+      ')' -> TokenizerCtx {source = s, index = i + 1, tokens = ts ++ [RParen]}
+      '.' -> TokenizerCtx {source = s, index = i + 1, tokens = ts ++ [Dot]}
+      '\\' -> TokenizerCtx {source = s, index = i + 1, tokens = ts ++ [Lambda]}
+      'λ' -> TokenizerCtx {source = s, index = i + 1, tokens = ts ++ [Lambda]}
+      c ->
+        if isAlphaNum c
+          then getNextId ctx
+          else error ("unexpected char: `" ++ [c, '`'])
 
 getNextId :: TokenizerCtx -> TokenizerCtx
 getNextId (TokenizerCtx {source = s, index = i, tokens = ts}) =
