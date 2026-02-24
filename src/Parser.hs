@@ -50,7 +50,6 @@ betaReduction expr = bReduce expr []
     bReduce (ApplExpr (FuncExpr param body) arg) history =
       let result = substitute param arg body
        in bReduce result (history ++ [result])
-      
     bReduce (ApplExpr e1 e2) history =
       let (e1', h1) = bReduce e1 history
        in case e1' of
@@ -58,21 +57,17 @@ betaReduction expr = bReduce expr []
             _ ->
               let (e2', h2) = bReduce e2 h1
                in (ApplExpr e1' e2', h2)
-
     bReduce (FuncExpr param body) history =
       let (body', h) = bReduce body history
        in (FuncExpr param body', h)
-
     bReduce expr history = (expr, history)
 
 substitute :: String -> Expr -> Expr -> Expr
 substitute name arg (ApplExpr e1 e2) =
   ApplExpr (substitute name arg e1) (substitute name arg e2)
-
 substitute name arg (FuncExpr param body)
   | param == name = FuncExpr param body -- shadowed
   | otherwise = FuncExpr param (substitute name arg body)
-
 substitute name arg (IdExpr x)
   | x == name = arg
   | otherwise = IdExpr x
