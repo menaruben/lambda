@@ -18,8 +18,7 @@ data TokenizerCtx = TokenizerCtx
   deriving (Show)
 
 -- TODO:
--- use unicode to support actual lambdaa
--- preserve position  data in token for better errors
+-- preserve position data in token for better errors
 getNextToken :: TokenizerCtx -> TokenizerCtx
 getNextToken ctx@(TokenizerCtx {source = s, index = i, tokens = ts})
   | i >= length s = ctx
