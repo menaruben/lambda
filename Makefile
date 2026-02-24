@@ -1,16 +1,10 @@
-BUILD=build
-SRC=src
-SOURCES=$(SRC)/Main.hs $(SRC)/Parser.hs $(SRC)/Tokenizer.hs $(SRC)/Preprocessor.hs
-FLAGS=-odir $(BUILD) -hidir $(BUILD) -i$(SRC)
-OUT=lambda
+.PHONY: build clean run
 
-.PHONY: build clean always
+build:
+	cabal build
 
-build: always
-	ghc -o $(BUILD)/$(OUT) $(SOURCES) $(FLAGS)
+run:
+	cabal run
 
 clean:
-	[ -d $(BUILD) ] && find $(BUILD) -mindepth 1 -delete || true
-
-always:
-	mkdir -p build
+	rm -rf dist-newstyle

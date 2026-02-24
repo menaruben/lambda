@@ -21,4 +21,8 @@ cabal.project.local
 cabal.project.local~
 .HTF/
 .ghc.environment.*
-build
+
+dist-newstyle/
+build/
+grammar/node_modules/
+grammar/build/
