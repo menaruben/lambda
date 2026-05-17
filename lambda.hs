@@ -7,7 +7,7 @@ data Expr
   = Var String
   | Fun String Expr
   | App Expr Expr
-  deriving (Show)
+  deriving (Show, Eq)
 
 data Token
   = LParen
@@ -186,5 +186,21 @@ etaReduction expr = error "todo"
 deltaReduction :: Expr -> Expr
 deltaReduction expr = error "todo"
 
-eval :: Expr -> Expr
-eval expr = deltaReduction $ etaReduction $ betaReduction $ alphaReduction expr
+data ReductionKind = Alpha | Beta | Eta | Delta deriving (Show)
+
+reduceUntil :: (Expr -> Expr -> Bool) -> (Expr -> Expr) -> ReductionKind -> Expr -> [(ReductionKind, Expr)]
+reduceUntil predicate reducer kind expr = go predicate reducer kind expr []
+  where
+    go predicate reducer kind expr acc =
+      let result = reducer expr
+          shouldContinue = predicate expr result
+       in if shouldContinue
+            then go predicate reducer kind result ((kind, result) : acc)
+            else acc
+
+eval :: Expr -> [(ReductionKind, Expr)]
+eval expr =
+  let alphaSteps = reduceUntil (\prev curr -> prev /= curr) alphaReduction Alpha expr
+      lastAlpha = if null alphaSteps then expr else snd (last alphaSteps)
+      betaSteps = reduceUntil (\prev curr -> prev /= curr) betaReduction Beta lastAlpha
+   in alphaSteps ++ betaSteps
