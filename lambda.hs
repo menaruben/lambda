@@ -117,6 +117,35 @@ uniqueVar name conflicts
   | name `elem` conflicts = uniqueVar (name ++ "'") conflicts
   | otherwise = name
 
+{-
+  since \x.x and \y.y are the "same" function, we can utilize this in
+  alpha reductions by renaming the body and parameter of functions
+  if the bound variables of e1 conflict with the free variables of the arg e2
+  in the application (e1 e2)
+
+  Example:
+  (\x.\y.x y)
+  e1: \x.\y.x
+  e2: y
+
+  - The bound variables in the body of e1 (excluding its own parameter) are {y}
+  - The free variables in e2 are {y}
+  - So the "conflict"/intersection would be {y}
+
+  if we directly applied the function to y then we would get:
+  \y.y
+
+  but now y is bound when it is supposed to be a free variable because
+  we replaced each bound x with the free `y`... So instead we have to
+  transform the expression to not have any intersection of bound vars in e1
+  and free vars in e2:
+  (\x.\y'.x y)
+
+  if we apply the function to y now we would get:
+  \y'.y
+
+  Now we have a bound variable `y'` and a free variable `y` without conflicts
+-}
 alphaReduction :: Expr -> Expr
 alphaReduction (App (Fun p expr) arg) =
   let argFreeVars = freeVars arg
@@ -132,15 +161,28 @@ alphaReduction (App e1 e2) = App (alphaReduction e1) (alphaReduction e2)
 alphaReduction (Fun p e) = Fun p (alphaReduction e)
 alphaReduction expr = expr
 
--- todo
-betaReduction :: Expr -> Expr
-betaReduction expr = error "todo"
+{-
+  TODO: add some description
 
--- nice to have
+  right now betaReduction only does a single step of a betaReduction so we have to reduceUntil..
+  prevExpr == currExpr
+-}
+substitute :: Expr -> String -> Expr -> Expr
+substitute (Var v) id expr = if id == v then expr else Var v
+substitute (Fun param body) id expr = Fun param (substitute body id expr)
+substitute (App e1 e2) id expr = App (substitute e1 id expr) (substitute e2 id expr)
+
+betaReduction :: Expr -> Expr
+betaReduction (Var v) = Var v
+betaReduction (Fun p e) = Fun p (betaReduction e)
+betaReduction (App (Fun p body) e) = substitute body p e
+betaReduction (App e1 e2) = App (betaReduction e1) (betaReduction e2)
+
+-- \x.(f x) == f
 etaReduction :: Expr -> Expr
 etaReduction expr = error "todo"
 
--- nice to have
+-- nice to have some builtin things for numerals, bools etc...
 deltaReduction :: Expr -> Expr
 deltaReduction expr = error "todo"
 
