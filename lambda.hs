@@ -1,4 +1,5 @@
 import Data.Char (isAlphaNum, isSpace)
+import Data.List (intersect, nub, (\\))
 import System.Environment (getArgs)
 import System.IO (hSetEncoding, stdout, utf8)
 
@@ -16,6 +17,18 @@ data Token
   | Lambda
   deriving (Show)
 
+prettyShow :: Expr -> String
+prettyShow expr = prettyHelper expr 0
+  where
+    prettyHelper (Var v) indent =
+      (pad indent) ++ "var: " ++ v
+    prettyHelper (Fun param expr) indent =
+      (pad indent) ++ "fun: " ++ param ++ "\n" ++ (prettyHelper expr (indent + 2))
+    prettyHelper (App e1 e2) indent =
+      (pad indent) ++ "app:\n" ++ (prettyHelper e1 (indent + 2)) ++ "\n" ++ (prettyHelper e2 (indent + 2))
+
+    pad n = replicate n ' '
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -28,7 +41,7 @@ main = do
 
   putStrLn $
     if isValid
-      then (show ast)
+      then (prettyShow ast)
       else "invalid ast" -- TODO: better diagnostics
 
 tokenize :: String -> [Token]
@@ -78,6 +91,7 @@ validate expr = shadowsParameters expr
 
 -- Shadowing parameters should not be allowed (e.g. \x.\y.\x.(y x))
 -- TODO: better diagnostics, what exactly is shadowed?
+-- returns true if ok, false otherwise
 shadowsParameters :: Expr -> Bool
 shadowsParameters expr = shadows expr []
   where
@@ -88,9 +102,33 @@ shadowsParameters expr = shadows expr []
     shadows (App e1 e2) acc =
       (shadows e1 acc) && (shadows e2 acc)
 
--- todo
+freeVars :: Expr -> [String]
+freeVars (Var v) = [v]
+freeVars (Fun p e) = nub $ freeVars e \\ [p]
+freeVars (App e1 e2) = nub $ freeVars e1 ++ freeVars e2
+
+boundVars :: Expr -> [String]
+boundVars (Var v) = []
+boundVars (Fun p e) = nub $ (p : boundVars e)
+boundVars (App e1 e2) = nub $ boundVars e1 ++ boundVars e2
+
+uniqueVar :: String -> [String] -> String
+uniqueVar name conflicts
+  | name `elem` conflicts = uniqueVar (name ++ "'") conflicts
+  | otherwise = name
+
 alphaReduction :: Expr -> Expr
-alphaReduction expr = error "todo"
+alphaReduction (App (Fun p expr) arg) =
+  let argFreeVars = freeVars arg
+      funFreeVars = boundVars expr \\ [p]
+      conflicting = intersect funFreeVars argFreeVars
+   in App (Fun p (subNewNames expr conflicting)) arg
+  where
+    subNewNames :: Expr -> [String] -> Expr
+    subNewNames (Var v) conflicts = Var (uniqueVar v conflicts)
+    subNewNames (Fun p e) conflicts = Fun (uniqueVar p conflicts) (subNewNames e conflicts)
+    subNewNames (App e1 e2) conflicts = App (subNewNames e1 conflicts) (subNewNames e2 conflicts)
+alphaReduction expr = expr
 
 -- todo
 betaReduction :: Expr -> Expr
