@@ -128,6 +128,8 @@ alphaReduction (App (Fun p expr) arg) =
     subNewNames (Var v) conflicts = Var (uniqueVar v conflicts)
     subNewNames (Fun p e) conflicts = Fun (uniqueVar p conflicts) (subNewNames e conflicts)
     subNewNames (App e1 e2) conflicts = App (subNewNames e1 conflicts) (subNewNames e2 conflicts)
+alphaReduction (App e1 e2) = App (alphaReduction e1) (alphaReduction e2)
+alphaReduction (Fun p e) = Fun p (alphaReduction e)
 alphaReduction expr = expr
 
 -- todo
