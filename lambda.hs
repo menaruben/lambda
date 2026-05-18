@@ -175,8 +175,19 @@ etaReduction (Fun p body) = case body of
   _ -> Fun p body
 
 -- nice to have some builtin things for numerals, bools etc...
+-- convention: $<whatever> are builtin things that come from delta reductions (like id' come from alpha)
 deltaReduction :: Expr -> Expr
-deltaReduction expr = error "todo"
+deltaReduction (Var v) = case v of
+  "true" -> Fun "$then" (Fun "$else" (Var "$then"))
+  "false" -> Fun "$then" (Fun "$else" (Var "$else"))
+  _ -> case reads v of
+    [(n, "")] -> Fun "$f" (Fun "$x" (churchNum n))
+    _ -> Var v
+    where
+      churchNum 0 = Var "$x"
+      churchNum n = App (Var "$f") (churchNum $ n - 1)
+deltaReduction (App e1 e2) = App (deltaReduction e1) (deltaReduction e2)
+deltaReduction (Fun p e) = Fun p (deltaReduction e)
 
 data ReductionKind
   = Alpha
@@ -194,20 +205,21 @@ reduceUntil predicate reducer kind expr =
 
 eval :: Expr -> [(ReductionKind, Expr)]
 eval expr =
-  let alphaSteps = reduceUntil (\prev curr -> prev /= curr) alphaReduction Alpha expr
-      lastAlpha =
-        if null alphaSteps
-          then expr
-          else snd (last alphaSteps)
+  let deltaStep = deltaReduction expr
+      deltaSteps = if deltaStep /= expr then [(Delta, deltaStep)] else []
+      afterDelta = if null deltaSteps then expr else deltaStep
+
+      alphaSteps = reduceUntil (\prev curr -> prev /= curr) alphaReduction Alpha afterDelta
+      lastAlpha = if null alphaSteps then afterDelta else snd (last alphaSteps)
 
       betaStep = betaReduction lastAlpha
    in if betaStep /= lastAlpha
-        then alphaSteps ++ [(Beta, betaStep)] ++ eval betaStep -- as long as it is a beta-redex, do betaReduce
+        then deltaSteps ++ alphaSteps ++ [(Beta, betaStep)] ++ eval betaStep
         else
-          let etaStep = etaReduction lastAlpha -- otherwise we can try to simplify with eta
+          let etaStep = etaReduction lastAlpha
            in if etaStep /= lastAlpha
-                then alphaSteps ++ [(Eta, etaStep)] ++ eval etaStep
-                else alphaSteps
+                then deltaSteps ++ alphaSteps ++ [(Eta, etaStep)] ++ eval etaStep
+                else deltaSteps ++ alphaSteps
 
 prettyShow :: Expr -> String
 prettyShow expr = prettyHelper expr 0
