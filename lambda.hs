@@ -17,32 +17,20 @@ data Token
   | Lambda
   deriving (Show)
 
-prettyShow :: Expr -> String
-prettyShow expr = prettyHelper expr 0
-  where
-    prettyHelper (Var v) indent =
-      (pad indent) ++ "var: " ++ v
-    prettyHelper (Fun param expr) indent =
-      (pad indent) ++ "fun: " ++ param ++ "\n" ++ (prettyHelper expr (indent + 2))
-    prettyHelper (App e1 e2) indent =
-      (pad indent) ++ "app:\n" ++ (prettyHelper e1 (indent + 2)) ++ "\n" ++ (prettyHelper e2 (indent + 2))
-
-    pad n = replicate n ' '
-
 main :: IO ()
 main = do
   args <- getArgs
   source <- case args of
     ["-c", s] -> return s
+    ["-f", filePath] -> readFile filePath
     _ -> error "repl not implemented yet"
 
   let ast = parse $ tokenize source
       isValid = validate ast
 
-  putStrLn $
-    if isValid
-      then (prettyShow ast)
-      else "invalid ast" -- TODO: better diagnostics
+  if isValid
+    then prettyEval ast
+    else putStrLn "invalid ast"
 
 tokenize :: String -> [Token]
 tokenize [] = []
@@ -161,15 +149,11 @@ alphaReduction (App e1 e2) = App (alphaReduction e1) (alphaReduction e2)
 alphaReduction (Fun p e) = Fun p (alphaReduction e)
 alphaReduction expr = expr
 
-{-
-  TODO: add some description
-
-  right now betaReduction only does a single step of a betaReduction so we have to reduceUntil..
-  prevExpr == currExpr
--}
 substitute :: Expr -> String -> Expr -> Expr
 substitute (Var v) id expr = if id == v then expr else Var v
-substitute (Fun param body) id expr = Fun param (substitute body id expr)
+substitute (Fun param body) id expr
+  | param == id = Fun param body -- inner shadowing -> stop here
+  | otherwise = Fun param (substitute body id expr)
 substitute (App e1 e2) id expr = App (substitute e1 id expr) (substitute e2 id expr)
 
 betaReduction :: Expr -> Expr
@@ -186,21 +170,54 @@ etaReduction expr = error "todo"
 deltaReduction :: Expr -> Expr
 deltaReduction expr = error "todo"
 
-data ReductionKind = Alpha | Beta | Eta | Delta deriving (Show)
+data ReductionKind
+  = Alpha
+  | Beta
+  | Eta
+  | Delta
+  deriving (Show)
 
 reduceUntil :: (Expr -> Expr -> Bool) -> (Expr -> Expr) -> ReductionKind -> Expr -> [(ReductionKind, Expr)]
-reduceUntil predicate reducer kind expr = go predicate reducer kind expr []
-  where
-    go predicate reducer kind expr acc =
-      let result = reducer expr
-          shouldContinue = predicate expr result
-       in if shouldContinue
-            then go predicate reducer kind result ((kind, result) : acc)
-            else acc
+reduceUntil predicate reducer kind expr =
+  let result = reducer expr
+   in if predicate expr result
+        then (kind, result) : reduceUntil predicate reducer kind result
+        else []
 
+-- cycle over alpha and beta reductions
 eval :: Expr -> [(ReductionKind, Expr)]
 eval expr =
   let alphaSteps = reduceUntil (\prev curr -> prev /= curr) alphaReduction Alpha expr
       lastAlpha = if null alphaSteps then expr else snd (last alphaSteps)
-      betaSteps = reduceUntil (\prev curr -> prev /= curr) betaReduction Beta lastAlpha
-   in alphaSteps ++ betaSteps
+      betaStep = betaReduction lastAlpha
+   in if betaStep == lastAlpha
+        then alphaSteps
+        else alphaSteps ++ [(Beta, betaStep)] ++ eval betaStep
+
+prettyShow :: Expr -> String
+prettyShow expr = prettyHelper expr 0
+  where
+    prettyHelper (Var v) indent =
+      (pad indent) ++ "var: " ++ v
+    prettyHelper (Fun param expr) indent =
+      (pad indent) ++ "fun: " ++ param ++ "\n" ++ (prettyHelper expr (indent + 2))
+    prettyHelper (App e1 e2) indent =
+      (pad indent) ++ "app:\n" ++ (prettyHelper e1 (indent + 2)) ++ "\n" ++ (prettyHelper e2 (indent + 2))
+
+    pad n = replicate n ' '
+
+prettyEval :: Expr -> IO ()
+prettyEval expr = do
+  putStrLn $ prettyShowMinimal expr
+  mapM_ printStep (eval expr)
+  where
+    printStep (kind, e) = putStrLn $ "=> " ++ kindLabel kind ++ " " ++ prettyShowMinimal e
+    prettyShowMinimal expr = case expr of
+      (Var v) -> v
+      (Fun param expr) -> "λ" ++ param ++ "." ++ (prettyShowMinimal expr)
+      (App e1 e2) -> "(" ++ (prettyShowMinimal e1) ++ " " ++ (prettyShowMinimal e2) ++ ")"
+
+    kindLabel Alpha = "α"
+    kindLabel Beta = "β"
+    kindLabel Eta = "η"
+    kindLabel Delta = "δ"
