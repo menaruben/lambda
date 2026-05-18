@@ -9,10 +9,10 @@ nix-shell
 
 Afterwards you can either build with `ghc lambda.hs`
 ```sh
-./lambda -- -f <path_to_example>
+./lambda -f <path_to_example>
 ```
 
 It is also possible to directly pass an expression to the interpreter:
 ```sh
-./lambda -- -c "((\x.\y.x true) false)"
+./lambda -c "((\x.\y.x true) false)"
 ```
