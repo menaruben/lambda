@@ -7,15 +7,12 @@ You can run the [](./examples) by first entering the nix-shell:
 nix-shell
 ```
 
-Afterwards you can either build the solution with `make build` or you can run with
+Afterwards you can either build with `ghc lambda.hs`
 ```sh
-cabal run lambda -- -f <path_to_example>
+./lambda -- -f <path_to_example>
 ```
 
 It is also possible to directly pass an expression to the interpreter:
 ```sh
-cabal run lambda -- -c "((\x.\y.x true) false)"
-```
-```
-Id: true
+./lambda -- -c "((\x.\y.x true) false)"
 ```
