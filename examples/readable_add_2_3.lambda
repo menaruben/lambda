@@ -1,5 +1,0 @@
-:define add   λa.λb.λf.λx.((a f) ((b f) x))
-:define two   λf.λx.(f (f x))
-:define three λf.λx.(f (f (f x)))
-
-(((($add $two) $three) succ) 0)

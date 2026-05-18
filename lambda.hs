@@ -23,7 +23,7 @@ main = do
   source <- case args of
     ["-c", s] -> return s
     ["-f", filePath] -> readFile filePath
-    _ -> error "repl not implemented yet"
+    _ -> error "please use either -c <expr> or -f <filepath>.\n if you wish to enter the REPL just ghci into it"
 
   let ast = parse $ tokenize source
       isValid = validate ast
