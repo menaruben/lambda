@@ -162,9 +162,17 @@ betaReduction (Fun p e) = Fun p (betaReduction e)
 betaReduction (App (Fun p body) e) = substitute body p e
 betaReduction (App e1 e2) = App (betaReduction e1) (betaReduction e2)
 
--- \x.(f x) == f
+-- \x.(f x) => f
+-- only if x is not a free variable in f!
 etaReduction :: Expr -> Expr
-etaReduction expr = error "todo"
+etaReduction (Var v) = Var v
+etaReduction (App e1 e2) = App (etaReduction e1) (etaReduction e2)
+etaReduction (Fun p body) = case body of
+  (App f (Var v)) ->
+    if v == p && p `notElem` (freeVars f)
+      then etaReduction f
+      else Fun p (etaReduction body)
+  _ -> Fun p body
 
 -- nice to have some builtin things for numerals, bools etc...
 deltaReduction :: Expr -> Expr
@@ -184,15 +192,22 @@ reduceUntil predicate reducer kind expr =
         then (kind, result) : reduceUntil predicate reducer kind result
         else []
 
--- cycle over alpha and beta reductions
 eval :: Expr -> [(ReductionKind, Expr)]
 eval expr =
   let alphaSteps = reduceUntil (\prev curr -> prev /= curr) alphaReduction Alpha expr
-      lastAlpha = if null alphaSteps then expr else snd (last alphaSteps)
+      lastAlpha =
+        if null alphaSteps
+          then expr
+          else snd (last alphaSteps)
+
       betaStep = betaReduction lastAlpha
-   in if betaStep == lastAlpha
-        then alphaSteps
-        else alphaSteps ++ [(Beta, betaStep)] ++ eval betaStep
+   in if betaStep /= lastAlpha
+        then alphaSteps ++ [(Beta, betaStep)] ++ eval betaStep -- as long as it is a beta-redex, do betaReduce
+        else
+          let etaStep = etaReduction lastAlpha -- otherwise we can try to simplify with eta
+           in if etaStep /= lastAlpha
+                then alphaSteps ++ [(Eta, etaStep)] ++ eval etaStep
+                else alphaSteps
 
 prettyShow :: Expr -> String
 prettyShow expr = prettyHelper expr 0
