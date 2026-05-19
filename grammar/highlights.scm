@@ -1,6 +1,11 @@
-; (define ":define" @keyword)
-(abstraction "\\" @operator "." @keyword)
-(abstraction "λ" @operator "." @keyword)
-; (macro "$" @operator (identifier) @function.macro)
-(application "(" @punctuation.bracket ")" @punctuation.bracket)
+(let_definition ":let" @keyword)
+
+(macro_identifier [
+  "@" @punctuation.special
+  (identifier) @function.macro
+])
+
+(abstraction [ "\\" "λ" ] @operator "." @punctuation.delimiter)
+(application [ "(" ")" ] @punctuation.bracket)
+
 (identifier) @variable

@@ -1,0 +1,3 @@
+:let and \cond1.\cond2.((cond1 cond2) false)
+
+((((@and true) false) ok) err)

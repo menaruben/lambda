@@ -25,12 +25,40 @@ main = do
     ["-f", filePath] -> readFile filePath
     _ -> error "please use either -c <expr> or -f <filepath>.\n if you wish to enter the REPL just ghci into it"
 
-  let ast = parse $ tokenize source
+  let ast = parse $ tokenize $ preprocess source
       isValid = validate ast
 
   if isValid
     then prettyEval ast
     else putStrLn "invalid ast"
+
+preprocess :: String -> String
+preprocess source =
+  let sourceLines = lines source
+      letLines = [l | l <- sourceLines, isLetLine l]
+      srcLines = [l | l <- sourceLines, not $ isLetLine l]
+      expr = unlines srcLines
+
+      parseLet line =
+        let clean = drop 5 line
+            (name, body) = break isSpace clean
+         in (name, dropWhile isSpace body)
+
+      rawDefinitions = map parseLet letLines
+      applySubst e (name, body) = substituteString ("@" ++ name) body e
+
+      -- incrementally expand macro definitions themselves, so that we can reference
+      -- macros in macros
+      expand macroList (name, body) = macroList ++ [(name, foldl applySubst body macroList)]
+      definitions = foldl expand [] rawDefinitions
+   in foldl applySubst expr definitions
+  where
+    isLetLine line = take 4 line == ":let"
+    substituteString :: String -> String -> String -> String
+    substituteString _ _ [] = []
+    substituteString old new str@(c : cs)
+      | take (length old) str == old = new ++ substituteString old new (drop (length old) str)
+      | otherwise = c : substituteString old new cs
 
 tokenize :: String -> [Token]
 tokenize [] = []

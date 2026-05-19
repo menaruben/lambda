@@ -1,0 +1,3 @@
+:let not \cond.\then.\else.((cond else) then)
+
+(((@not false) hi) bye)

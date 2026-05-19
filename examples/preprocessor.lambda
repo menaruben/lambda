@@ -1,0 +1,6 @@
+:let false \x.\y.y
+:let true \x.\y.x
+:let not \cond.((cond @false) @true)
+:let xor \cond1.\cond2.((cond1 (@not cond2)) cond2)
+
+((((@xor @true) @false) ok) err)

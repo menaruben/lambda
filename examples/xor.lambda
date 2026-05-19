@@ -1,0 +1,3 @@
+:let xor \cond1.\cond2.((cond1 ((cond2 false) true)) cond2) 
+
+((((@xor true) false) ok) err)
