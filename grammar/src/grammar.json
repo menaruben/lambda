@@ -14,27 +14,6 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "define"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_expr"
-        }
-      ]
-    },
-    "define": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "STRING",
-          "value": ":define"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "identifier"
-        },
-        {
-          "type": "SYMBOL",
           "name": "_expr"
         }
       ]
@@ -49,10 +28,6 @@
         {
           "type": "SYMBOL",
           "name": "abstraction"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "macro"
         },
         {
           "type": "SYMBOL",
@@ -108,19 +83,6 @@
         {
           "type": "SYMBOL",
           "name": "_expr"
-        }
-      ]
-    },
-    "macro": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "$"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "identifier"
         }
       ]
     },

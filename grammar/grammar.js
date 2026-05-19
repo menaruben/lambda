@@ -13,20 +13,12 @@ module.exports = grammar({
     source_file: $ => repeat($._line),
 
     _line: $ => choice(
-      $.define,
-      $._expr
-    ),
-    
-    define: $ => seq(
-      ':define',
-      $.identifier,
       $._expr
     ),
 
     _expr: $ => choice(
       $.application,
       $.abstraction,
-      $.macro,
       $.identifier
     ),
 
@@ -42,11 +34,6 @@ module.exports = grammar({
       $.identifier,
       '.',
       $._expr
-    ),
-
-    macro: $ => seq(
-      '$',
-      $.identifier
     ),
 
     identifier: $ => /[a-zA-Z0-9_]+/,

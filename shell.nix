@@ -13,6 +13,10 @@ pkgs.mkShell {
 
     # utf8 encoding
     pkgs.glibcLocales
+
+    # presentation
+    pkgs.presenterm
+    pkgs.mermaid-cli
   ];
 
   shellHook = ''
