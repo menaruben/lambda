@@ -103,20 +103,20 @@ distinct (x : xs)
   | otherwise = x : distinct xs
 
 validate :: Expr -> Bool
-validate expr = shadowsParameters expr
+validate expr = doesNotShadowsParameters expr
 
 -- Shadowing parameters should not be allowed (e.g. \x.\y.\x.(y x))
 -- TODO: better diagnostics, what exactly is shadowed?
 -- returns true if ok, false otherwise
-shadowsParameters :: Expr -> Bool
-shadowsParameters expr = shadows expr []
+doesNotShadowsParameters :: Expr -> Bool
+doesNotShadowsParameters expr = go expr []
   where
-    shadows (Fun param expr) acc
+    go (Fun param expr) acc
       | param `elem` acc = False
-      | otherwise = shadows expr (param : acc)
-    shadows (Var v) acc = True
-    shadows (App e1 e2) acc =
-      (shadows e1 acc) && (shadows e2 acc)
+      | otherwise = go expr (param : acc)
+    go (Var v) acc = True
+    go (App e1 e2) acc =
+      (go e1 acc) && (go e2 acc)
 
 freeVars :: Expr -> [String]
 freeVars (Var v) = [v]

@@ -54,11 +54,11 @@ Basic Control Flow of Our Interpreter
 
 ```mermaid +render
 flowchart
-    A[source] --> PRE[preprocess]
-    PRE --> B[tokenize]
-    B --> C[parse]
-    C --> D[validate]
-    D --> E[eval]
+    A["source :: String"] --> PRE["preprocess <br/>:: String -> String"]
+    PRE --> B["tokenize <br/>:: String -> [Token]"]
+    B --> C["parse <br/>:: [Token] -> Expr"]
+    C --> D["validate <br/>:: Expr -> bool"]
+    D --> E["eval <br/>:: Expr -> [(ReductionKind, Expr)]"]
 
     subgraph LOOP["eval loop"]
         direction TB
@@ -160,5 +160,5 @@ The End
 
 Thank you for listening!
 
-Are there any questions?
+Are there any questions or feedback?
 <!-- end_slide -->
