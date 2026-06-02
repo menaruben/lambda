@@ -1,5 +1,5 @@
 # lambda
-[⚠️wip] a simple lambda calculus interpreter in haskell 
+⚠️ project is now on codeberg [here](https://codeberg.org/yoruby/el/)
 
 # How to run examples
 You can run the [](./examples) by first entering the nix-shell:
